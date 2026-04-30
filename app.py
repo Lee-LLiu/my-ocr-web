@@ -3,7 +3,6 @@ from aip import AipOcr
 from openpyxl import load_workbook
 from openpyxl.drawing.image import Image as XLImage
 from PIL import Image as PILImage
-from fuzzywuzzy import fuzz
 import io
 
 # --- 页面配置 ---
@@ -15,8 +14,9 @@ with st.sidebar:
     app_id = st.text_input("APP_ID", type="password")
     api_key = st.text_input("API_KEY", type="password")
     secret_key = st.text_input("SECRET_KEY", type="password")
-    st.info("💡 優化說明：現在支持價格在商品名「上方」或「下方」的雙向識別。")
+    st.info("💡 优化说明：支持价格在商品名「上方」或「下方」识别，修复了变量名错误。")
 
+# --- 核心引擎 ---
 def get_smart_match_info(items, excel_names, alias_dict):
     all_candidates = []
     for name in excel_names:
@@ -43,7 +43,6 @@ def process_ocr_logic(img_bytes, excel_names, alias_dict, client):
     if target_name == "未知": return "未知", 0.00
 
     potential_prices = []
-    # 商品名的中心坐标
     name_center_x = name_loc['left'] + name_loc['width'] / 2
     name_center_y = name_loc['top'] + name_loc['height'] / 2
 
@@ -51,30 +50,27 @@ def process_ocr_logic(img_bytes, excel_names, alias_dict, client):
         text = item['words']
         loc = item['location']
         
-        # 1. 过滤干扰
+        # 1. 过滤干扰 (水印、挂牌等)
         if ":" in text or ("-" in text and len(text) > 8): continue 
-        if any(x in text for x in ["根", "个", "根/", "个/", "元/", "买一"]): continue
-        if loc['top'] > img_h * 0.85: continue # 允许更靠下的价格，只要不是贴底
+        if any(x in text for x in ["根", "个", "元/", "买一"]): continue
 
         nums = "".join(filter(lambda x: x.isdigit() or x == '.', text))
         if len(nums) < 2: continue
 
-        # 2. 增强版評分邏輯
+        # 2. 评分逻辑
         area = loc['width'] * loc['height']
         price_center_x = loc['left'] + loc['width'] / 2
         price_center_y = loc['top'] + loc['height'] / 2
         
-        # 【横向对齐权重】：价格中点与品名中点的水平距离
+        # 水平对齐权重 (x坐标)
         x_dist_ratio = abs(name_center_x - price_center_x) / img_w
-        # 只要横向偏差在 10% 以内，视为高度对齐
         dist_weight = 1.5 if x_dist_ratio < 0.1 else (0.5 if x_dist_ratio > 0.2 else 1.0)
         
-        # 【垂直距离权重】：计算垂直方向的绝对距离 (不分上下)
+        # 垂直距离权重 (y坐标，不分上下)
         y_dist_ratio = abs(name_center_y - price_center_y) / img_h
-        # 价格通常离品名很近，距离越近评分越高
-        vertical_score = 1.2 if y_dist_ratio < 0.2 else 0.8
+        vertical_score = 1.2 if y_dist_ratio < 0.25 else 0.8
         
-        # 【格式权重】：优先识别三位以上带小数点的数字
+        # 格式权重
         fmt_weight = 1.5 if "." in text and (3 <= len(nums) <= 5) else 1.0
 
         final_score = area * dist_weight * vertical_score * fmt_weight
@@ -125,8 +121,8 @@ if st.button("🚀 开始自动化识别"):
             target_row = None
             for r in range(2, ws.max_row + 1):
                 cell_v = str(ws.cell(row=r, column=1).value).strip()
-                # 模糊匹配：只要名字相互包含，就视为同一行，解决“番茄”多图嵌入问题
-                if cell_v == name or name in cell_v or cell_val in name:
+                # --- 修复位置：确保变量名统一为 cell_v ---
+                if cell_v == name or name in cell_v or cell_v in name:
                     target_row = r
                     break
             
@@ -151,8 +147,8 @@ if st.button("🚀 开始自动化识别"):
                 ws.row_dimensions[target_row].height = xl_img.height * 0.8
                 ws.add_image(xl_img, ws.cell(row=target_row, column=c_col).coordinate)
                 
-                st.success(f"✅ {img_file.name} -> 【{name}】 价格: {price} (已追加到第 {c_col} 列)")
+                st.success(f"✅ {img_file.name} -> 【{name}】 价格: {price}")
 
         out_io = io.BytesIO()
         wb.save(out_io)
-        st.download_button("📥 下载结果", data=out_io.getvalue(), file_name="multi_align_result.xlsx")
+        st.download_button("📥 下载结果", data=out_io.getvalue(), file_name="final_fixed_result.xlsx")
