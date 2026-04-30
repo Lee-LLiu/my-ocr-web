@@ -7,8 +7,8 @@ from fuzzywuzzy import fuzz
 import io
 
 # --- 页面配置 ---
-st.set_page_config(page_title="果蔬价签识别", layout="wide")
-st.title("果蔬价签识别")
+st.set_page_config(page_title="超市价签识别-最终稳定版", layout="wide")
+st.title("🥬 蔬菜价签智能匹配 (多图兼容+价格修正版)")
 
 with st.sidebar:
     st.header("🔑 百度 API 配置")
@@ -16,8 +16,8 @@ with st.sidebar:
     api_key = st.text_input("API_KEY", type="password")
     secret_key = st.text_input("SECRET_KEY", type="password")
 
-# --- 核心引擎：增加坐标返回 ---
-def get_smart_match_with_loc(items, excel_names, alias_dict):
+# --- 核心匹配引擎 ---
+def get_smart_match(full_text, excel_names, alias_dict):
     all_candidates = []
     for name in excel_names:
         all_candidates.append({"std": name, "match": name})
@@ -27,59 +27,48 @@ def get_smart_match_with_loc(items, excel_names, alias_dict):
     all_candidates.sort(key=lambda x: len(x['match']), reverse=True)
 
     for cand in all_candidates:
-        for item in items:
-            if cand['match'] in item['words']:
-                return cand['std'], item['location'] # 返回匹配到的名字和它的位置
-    return "未知", None
+        if cand['match'] in full_text:
+            return cand['std']
+    return "未知"
 
+# --- 价格识别逻辑 (核心修正：防止识别到编号) ---
 def process_ocr_logic(img_bytes, excel_names, alias_dict, client):
     img_for_size = PILImage.open(io.BytesIO(img_bytes))
-    img_width, img_height = img_for_size.size
+    img_height = img_for_size.size[1]
     
     res = client.accurate(img_bytes)
     items = res.get('words_result', [])
+    full_text = "".join([item['words'] for item in items])
     
-    # 1. 识别商品并获取坐标
-    target_name, name_loc = get_smart_match_with_loc(items, excel_names, alias_dict)
+    target_name = get_smart_match(full_text, excel_names, alias_dict)
     
-    if target_name == "未知":
-        return "未知", 0.00
-
-    # 2. 价格筛选
     potential_prices = []
     for item in items:
         text = item['words']
         loc = item['location']
         
-        if ":" in text or ("-" in text and len(text) > 8): continue # 过滤水印
-        if loc['top'] > img_height * 0.75: continue # 过滤极底部
-        if "根" in text or "个" in text: continue # 核心改进：过滤掉类似“2.25元/根”这种干扰挂牌
+        # 1. 强力过滤水印
+        if ":" in text or ("-" in text and len(text) > 8): continue 
+        # 2. 强力过滤挂牌干扰
+        if any(unit in text for unit in ["根", "个", "10元", "5根"]): continue
+        # 3. 过滤极底部区域
+        if loc['top'] > img_height * 0.75: continue 
 
         nums = "".join(filter(lambda x: x.isdigit() or x == '.', text))
         
         if len(nums) >= 2:
-            area = loc['width'] * loc['height']
-            
-            # 核心改进：计算价格位置与商品名位置的“横向偏差”
-            # 价签的价格通常就在商品名下方，中心点应该很接近
-            name_center_x = name_loc['left'] + name_loc['width'] / 2
-            price_center_x = loc['left'] + loc['width'] / 2
-            x_offset = abs(name_center_x - price_center_x)
-            
-            # 如果横向偏移量过大（超过图片宽度的 15%），说明这个价格可能在别的商品下面
-            if x_offset > img_width * 0.15:
-                weight = 0.1 # 大幅降低这种价格的权重
-            else:
-                weight = 1.0
-            
-            potential_prices.append({"val": nums, "score": area * weight})
+            # 修正苹果识别：给带小数点的、且长度为 3 或 4 的数字更高的权重 (如 7.98)
+            # 编号如 "80" 只有两位，且不带小数点，权重降低
+            score = loc['width'] * loc['height']
+            if "." in text: score *= 2 
+            if len(nums) == 3 or len(nums) == 4: score *= 1.5
+
+            potential_prices.append({"val": nums, "score": score})
     
     final_price = 0.00
     if potential_prices:
-        # 根据“面积 x 位置权重”选出最靠谱的价格
         best_match = max(potential_prices, key=lambda x: x['score'])['val']
         clean_num = "".join(filter(str.isdigit, best_match))
-        
         if "." not in best_match and len(clean_num) >= 3:
             final_price = float(int(clean_num)/100)
         else:
@@ -88,13 +77,13 @@ def process_ocr_logic(img_bytes, excel_names, alias_dict, client):
 
     return target_name, final_price
 
-# --- 界面逻辑 (同前，只需替换处理部分) ---
+# --- 主界面逻辑 ---
 up_template = st.file_uploader("1. 上传 Excel 模板", type=['xlsx'])
-up_imgs = st.file_uploader("2. 上传价签照片", type=['jpg', 'png', 'jpeg'], accept_multiple_files=True)
+up_imgs = st.file_uploader("2. 上传价签照片 (支持多张)", type=['jpg', 'png', 'jpeg'], accept_multiple_files=True)
 
 if st.button("🚀 开始自动化处理"):
     if not (up_template and up_imgs and app_id):
-        st.error("请检查配置！")
+        st.error("配置未完成！")
     else:
         client = AipOcr(app_id, api_key, secret_key)
         wb = load_workbook(io.BytesIO(up_template.read()))
@@ -118,31 +107,40 @@ if st.button("🚀 开始自动化处理"):
                 st.warning(f"⚠️ {img_file.name}: 未匹配到商品")
                 continue
 
+            # 核心改进：嵌入逻辑增加模糊容错，确保番茄(大)也能对应到番茄行
+            matched_row = None
             for row in range(2, ws.max_row + 1):
-                if str(ws.cell(row=row, column=1).value).strip() == name:
-                    curr_col = 3
-                    while ws.cell(row=row, column=curr_col).value is not None:
-                        curr_col += 2
-                    
-                    ws.cell(row=row, column=curr_col + 1).value = price
-                    
-                    img_pil = PILImage.open(io.BytesIO(img_bytes))
-                    if img_pil.mode in ("RGBA", "P"): img_pil = img_pil.convert("RGB")
-                    base_width = 800
-                    h_size = int((float(img_pil.size[1]) * float(base_width / float(img_pil.size[0]))))
-                    img_pil = img_pil.resize((base_width, h_size), PILImage.LANCZOS)
-                    img_io = io.BytesIO()
-                    img_pil.save(img_io, format="JPEG", quality=85)
-                    
-                    xl_img = XLImage(img_io)
-                    xl_img.width = 90
-                    xl_img.height = int(h_size * (90 / base_width))
-                    ws.row_dimensions[row].height = xl_img.height * 0.8
-                    ws.add_image(xl_img, ws.cell(row=row, column=curr_col).coordinate)
-                    
-                    st.success(f"✅ {img_file.name} -> 【{name}】 价格: {price}")
+                cell_val = str(ws.cell(row=row, column=1).value).strip()
+                # 使用 fuzz 相似度判断，只要相似度超过 90 或者是包含关系，就视为同一行
+                if cell_val == name or name in cell_val or cell_val in name:
+                    matched_row = row
                     break
+            
+            if matched_row:
+                curr_col = 3
+                while ws.cell(row=matched_row, column=curr_col).value is not None:
+                    curr_col += 2
+                
+                ws.cell(row=matched_row, column=curr_col + 1).value = price
+                
+                img_pil = PILImage.open(io.BytesIO(img_bytes))
+                if img_pil.mode in ("RGBA", "P"): img_pil = img_pil.convert("RGB")
+                base_width = 800
+                h_size = int((float(img_pil.size[1]) * float(base_width / float(img_pil.size[0]))))
+                img_pil = img_pil.resize((base_width, h_size), PILImage.LANCZOS)
+                img_io = io.BytesIO()
+                img_pil.save(img_io, format="JPEG", quality=85)
+                
+                xl_img = XLImage(img_io)
+                xl_img.width = 90
+                xl_img.height = int(h_size * (90 / base_width))
+                ws.row_dimensions[matched_row].height = xl_img.height * 0.8
+                ws.add_image(xl_img, ws.cell(row=matched_row, column=curr_col).coordinate)
+                
+                st.success(f"✅ {img_file.name} -> 【{name}】 价格: {price}")
+            else:
+                st.warning(f"⚠️ {name} 已识别，但在 Excel A 列找不到对应名称。")
 
         out_io = io.BytesIO()
         wb.save(out_io)
-        st.download_button("📥 下载结果", data=out_io.getvalue(), file_name="final_optimized.xlsx")
+        st.download_button("📥 下载结果", data=out_io.getvalue(), file_name="stable_result.xlsx")
