@@ -1,0 +1,4 @@
+streamlit
+baidu-aip
+openpyxl
+Pillow
