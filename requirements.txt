@@ -1,4 +1,5 @@
 streamlit
 baidu-aip
+chardet
 openpyxl
 Pillow
