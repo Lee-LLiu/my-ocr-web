@@ -1,6 +1,7 @@
-streamlit
 baidu-aip
+chardet
 openpyxl
-pillow
+Pillow
 fuzzywuzzy
 python-Levenshtein
+streamlit
