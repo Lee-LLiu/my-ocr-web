@@ -58,9 +58,29 @@ def calculate_price_for_product(target_name_loc, ocr_items, img_w, img_h):
 
 # --- 3. 主界面 ---
 with st.sidebar:
-    app_id = st.text_input("APP_ID", type="password")
-    api_key = st.text_input("API_KEY", type="password")
-    secret_key = st.text_input("SECRET_KEY", type="password")
+    st.header("👤 个人账号配置")
+    
+    # 制作一个展开栏，存放注册教程
+    with st.expander("👉 还没有 API Key？点我 1 分钟开通"):
+        st.markdown("""
+        1. [点击此处登录百度控制台](https://console.bce.baidu.com/)
+        2. [点击此处领取免费额度](https://console.bce.baidu.com/ai/#/ai/ocr/overview/resource/getFree) 
+           *(选：通用场景OCR-高精度版)*
+        3. [点击此处创建应用获取 Key](https://console.bce.baidu.com/ai/#/ai/ocr/app/create)
+        """)
+
+    # 朋友输入自己的 Key
+    user_app_id = st.text_input("第一步：输入 APP_ID", type="password")
+    user_api_key = st.text_input("第二步：输入 API_KEY", type="password")
+    user_secret_key = st.text_input("第三步：输入 SECRET_KEY", type="password")
+
+    st.divider()
+    
+    # 增加充值引导
+    st.subheader("💰 额度管理")
+    st.caption("如果识别报错‘次数超限’，说明免费额度用完啦。")
+    st.markdown("[🚀 快速充值点这里](https://console.bce.baidu.com/ai/#/ai/ocr/overview/resource/buy)")
+    st.info("注：充值 1 元即可继续使用，按量计费非常便宜。")
 
 up_template = st.file_uploader("1. 上传 Excel", type=['xlsx'])
 up_imgs = st.file_uploader("2. 上传多张照片", type=['jpg', 'png', 'jpeg'], accept_multiple_files=True)
