@@ -61,9 +61,9 @@ with st.sidebar:
     st.header("👤 个人账号配置")
     
     # 制作一个展开栏，存放注册教程
-    with st.expander("👉 还没有 API Key？点我 1 分钟开通"):
+    with st.expander("👉 还没有 API Key？点我 1 分钟获取"):
         st.markdown("""
-        1. [点击此处登录百度控制台](https://console.bce.baidu.com/)
+        1. [点击此处登录注册](https://console.bce.baidu.com/)
         2. [点击此处领取免费额度](https://console.bce.baidu.com/ai/#/ai/ocr/overview/resource/getFree) 
            *(选：通用场景OCR-高精度版)*
         3. [点击此处创建应用获取 Key](https://console.bce.baidu.com/ai/#/ai/ocr/app/create)
