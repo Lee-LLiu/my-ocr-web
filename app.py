@@ -7,7 +7,7 @@ import io
 
 # --- 页面配置 ---
 st.set_page_config(page_title="超市价签识别-全方位对齐版", layout="wide")
-st.title("🥬 蔬菜价签智能匹配 (上下双向坐标对齐版)")
+st.title("瓜果蔬菜价签智能识别")
 
 with st.sidebar:
     st.header("🔑 百度 API 配置")
