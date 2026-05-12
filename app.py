@@ -84,7 +84,7 @@ with col_btn:
                 data=f,
                 file_name="价签识别规范模板.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                help="点击下载官方规范 Excel 模板"
+                help="点击下载规范 Excel 模板"
             )
     else:
         st.caption("⚠️ 缺失模板")
