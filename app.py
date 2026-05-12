@@ -63,11 +63,11 @@ with st.sidebar:
     # 制作一个展开栏，存放注册教程
     with st.expander("👉 还没有 API Key？点我 1 分钟获取"):
         st.markdown("""
-        1. [点击此处免费注册登录](https://console.bce.baidu.com/)
-        2. [点击此处领取免费额度](https://console.bce.baidu.com/ai/#/ai/ocr/overview/resource/getFree) 
+        1. [点此免费注册登录](https://console.bce.baidu.com/)
+        2. [点此领取免费额度](https://console.bce.baidu.com/ai/#/ai/ocr/overview/resource/getFree) 
            *(选：通用场景OCR-高精度版)*
-        3. [点击此处免费创建应用获取专属Key](https://console.bce.baidu.com/ai/#/ai/ocr/app/create)
-        """)
+        3. [点此免费创建应用获取专属Key](https://console.bce.baidu.com/ai/#/ai/ocr/app/create)
+        """)*(命名不限制)*
 
     # 朋友输入自己的 Key
     user_app_id = st.text_input("第一步：输入 APP_ID", type="password")
