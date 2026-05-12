@@ -10,7 +10,7 @@ import os
 st.set_page_config(page_title="超市价签识别快速识别", layout="wide")
 st.title("多图超市价签识别")
 
-# --- 2. 逻辑函数 (保持不变) ---
+# --- 2. 逻辑函数 (保持识别逻辑不变) ---
 def get_all_matched_items_list(ocr_items, excel_names, alias_dict):
     found_list = []
     match_map = {name: name for name in excel_names}
@@ -65,17 +65,15 @@ with st.sidebar:
     st.subheader("💰 额度管理")
     st.markdown("[🚀 快速充值点这里](https://console.bce.baidu.com/ai/#/ai/ocr/overview/resource/buy)")
 
-# --- 4. 主界面布局 (重点修改这里) ---
+# --- 4. 主界面布局 (界面微调核心) ---
 
-# 创建两列布局：第一列占 8 份宽度，第二列占 2 份宽度
-col1, col2 = st.columns([8, 2])
-
-with col1:
+# 上传模板行
+col_up, col_btn = st.columns([4, 1]) # 4:1 的比例
+with col_up:
     up_template = st.file_uploader("1. 上传 Excel模块", type=['xlsx'])
-
-with col2:
-    # 为了对齐美观，我们在列顶增加一点间距
-    st.write("##") 
+with col_btn:
+    # 增加空行使按钮与上传框对齐
+    st.markdown("<div style='margin-top: 35px;'></div>", unsafe_allow_html=True)
     template_path = "template.xlsx"
     if os.path.exists(template_path):
         with open(template_path, "rb") as f:
@@ -84,14 +82,19 @@ with col2:
                 data=f,
                 file_name="价签识别规范模板.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True # 让按钮充满这一列的宽度
+                use_container_width=True
             )
-    else:
-        st.caption("⚠️ 未找到 template.xlsx")
 
+# 上传图片行
 up_imgs = st.file_uploader("2. 上传待识别照片（可多张）", type=['jpg', 'png', 'jpeg'], accept_multiple_files=True)
 
-if st.button("🚀 开始精准识别并输出结果", use_container_width=True):
+# 识别按钮行 (限制在左侧，不横跨全屏)
+col_act, col_empty = st.columns([1, 4]) # 按钮占 1/5 宽度
+with col_act:
+    run_btn = st.button("🚀 开始精准识别", type="primary", use_container_width=True)
+
+# --- 5. 识别主逻辑 ---
+if run_btn:
     if not (up_template and up_imgs and user_app_id and user_api_key and user_secret_key):
         st.error("请完整填写 API 配置并上传模板/照片")
     else:
@@ -153,6 +156,8 @@ if st.button("🚀 开始精准识别并输出结果", use_container_width=True)
                     st.success(f"✅ 识别到 【{p_name}】 来自 {img_file.name}，填入第 {c_col} 列")
                     row_tracker[target_row] += 2
 
+        # 结果下载
         out_io = io.BytesIO()
         wb.save(out_io)
-        st.download_button("📥 下载识别结果", data=out_io.getvalue(), file_name="final_result.xlsx", use_container_width=True)
+        st.divider()
+        st.download_button("📥 下载识别结果 Excel", data=out_io.getvalue(), file_name="识别结果.xlsx", type="primary")
