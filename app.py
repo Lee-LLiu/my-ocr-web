@@ -65,10 +65,10 @@ with st.sidebar:
         st.markdown("""
         1. [点此免费注册登录](https://console.bce.baidu.com/)
         2. [点此领取免费额度](https://console.bce.baidu.com/ai/#/ai/ocr/overview/resource/getFree) 
-           *(选：通用场景OCR-高精度版)*
+           <br><span style='color:red;'>*(选：通用场景OCR-高精度版)*</span>
         3. [点此免费获取专属Key](https://console.bce.baidu.com/ai/#/ai/ocr/app/create)
-           *(教程：创建应用-命名-全选文字识别接口-简单描述-提交)*
-        """)
+           <br><span style='color:red;'>*(教程：创建应用-命名-全选文字识别接口-简单描述-提交)*</span>
+""", unsafe_allow_html=True)
            
 
     # 朋友输入自己的 Key
