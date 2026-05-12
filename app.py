@@ -84,8 +84,8 @@ with st.sidebar:
     st.markdown("[🚀 快速充值点这里](https://console.bce.baidu.com/ai/#/ai/ocr/overview/resource/buy)")
     st.info("注：充值 1 元即可继续使用，按量计费非常便宜。")
 
-up_template = st.file_uploader("1. 上传 Excel", type=['xlsx'])
-up_imgs = st.file_uploader("2. 上传多张照片", type=['jpg', 'png', 'jpeg'], accept_multiple_files=True)
+up_template = st.file_uploader("1. 上传 Excel模块", type=['xlsx'])
+up_imgs = st.file_uploader("2. 上传待识别照片（可多张）", type=['jpg', 'png', 'jpeg'], accept_multiple_files=True)
 
 if st.button("🚀 开始精准识别并输出结果"):
     if not (up_template and up_imgs and app_id):
