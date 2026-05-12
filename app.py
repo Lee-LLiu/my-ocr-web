@@ -87,7 +87,7 @@ with st.sidebar:
 up_template = st.file_uploader("1. 上传 Excel", type=['xlsx'])
 up_imgs = st.file_uploader("2. 上传多张照片", type=['jpg', 'png', 'jpeg'], accept_multiple_files=True)
 
-if st.button("🚀 开始全量识别并追加"):
+if st.button("🚀 开始精准识别并输出结果"):
     if not (up_template and up_imgs and app_id):
         st.error("请完整填写配置")
     else:
