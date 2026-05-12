@@ -6,8 +6,8 @@ from PIL import Image as PILImage
 import io
 
 # --- 1. 页面配置 ---
-st.set_page_config(page_title="超市价签识别-多图追加版", layout="wide")
-st.title("超市价签识别 (强力多图追加模式)")
+st.set_page_config(page_title="超市价签识别快速识别", layout="wide")
+st.title("多图超市价签识别")
 
 # --- 2. 逻辑函数 ---
 def get_all_matched_items_list(ocr_items, excel_names, alias_dict):
