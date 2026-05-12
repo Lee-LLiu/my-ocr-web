@@ -174,14 +174,6 @@ def show_bottom_ad():
     ad_code = """
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9949147033073504"
      crossorigin="anonymous"></script>
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-format="autorelaxed"
-     data-ad-client="ca-pub-9949147033073504"
-     data-ad-slot="6189192332"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
     """
     # 渲染广告，height 可以根据广告实际高度调整，通常 200-300 比较稳妥
     components.html(ad_code, height=300)
