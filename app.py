@@ -67,7 +67,9 @@ with st.sidebar:
         2. [点此领取免费额度](https://console.bce.baidu.com/ai/#/ai/ocr/overview/resource/getFree) 
            *(选：通用场景OCR-高精度版)*
         3. [点此免费创建应用获取专属Key](https://console.bce.baidu.com/ai/#/ai/ocr/app/create)
-        """)*(命名不限制)*
+           *(命名不限制)*
+        """)
+           
 
     # 朋友输入自己的 Key
     user_app_id = st.text_input("第一步：输入 APP_ID", type="password")
