@@ -65,33 +65,37 @@ with st.sidebar:
     st.subheader("💰 额度管理")
     st.markdown("[🚀 快速充值点这里](https://console.bce.baidu.com/ai/#/ai/ocr/overview/resource/buy)")
 
-# --- 4. 主界面布局 (界面微调核心) ---
+# --- 4. 主界面布局 (极致紧凑版) ---
 
-# 上传模板行
-col_up, col_btn = st.columns([4, 1]) # 4:1 的比例
+# 使用更悬殊的比例 [10, 2]，让下载按钮显得更小
+col_up, col_btn = st.columns([10, 2]) 
+
 with col_up:
     up_template = st.file_uploader("1. 上传 Excel模块", type=['xlsx'])
+
 with col_btn:
-    # 增加空行使按钮与上传框对齐
-    st.markdown("<div style='margin-top: 35px;'></div>", unsafe_allow_html=True)
+    # 这里的 margin-top 是为了让下载按钮对齐上传框右侧的按钮位置
+    st.markdown("<div style='margin-top: 38px;'></div>", unsafe_allow_html=True)
     template_path = "template.xlsx"
     if os.path.exists(template_path):
         with open(template_path, "rb") as f:
             st.download_button(
-                label="📥 下载模板",
+                label="📥 下载模板", 
                 data=f,
                 file_name="价签识别规范模板.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
+                help="点击下载官方规范 Excel 模板"
             )
+    else:
+        st.caption("⚠️ 缺失模板")
 
-# 上传图片行
+# 2. 上传图片
 up_imgs = st.file_uploader("2. 上传待识别照片（可多张）", type=['jpg', 'png', 'jpeg'], accept_multiple_files=True)
 
-# 识别按钮行 (限制在左侧，不横跨全屏)
-col_act, col_empty = st.columns([1, 4]) # 按钮占 1/5 宽度
+# 3. 开始按钮（左对齐，不占全行）
+col_act, _ = st.columns([2, 8])
 with col_act:
-    run_btn = st.button("🚀 开始精准识别", type="primary", use_container_width=True)
+    run_btn = st.button("🚀 开始精准识别并输出", type="primary", use_container_width=True)
 
 # --- 5. 识别主逻辑 ---
 if run_btn:
@@ -153,10 +157,9 @@ if run_btn:
                     ws.row_dimensions[target_row].height = xl_img.height * 0.8
                     ws.add_image(xl_img, ws.cell(row=target_row, column=c_col).coordinate)
                     
-                    st.success(f"✅ 识别到 【{p_name}】 来自 {img_file.name}，填入第 {c_col} 列")
+                    st.success(f"✅ 识别到 【{p_name}】 来自 {img_file.name}")
                     row_tracker[target_row] += 2
 
-        # 结果下载
         out_io = io.BytesIO()
         wb.save(out_io)
         st.divider()
