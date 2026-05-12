@@ -97,7 +97,7 @@ up_imgs = st.file_uploader("2. 上传待识别照片（可多张）", type=['jpg
 # 3. 开始按钮（左对齐，不占全行）
 col_act, _ = st.columns([2, 8])
 with col_act:
-    run_btn = st.button("🚀 开始精准识别并输出", type="primary", use_container_width=True)
+    run_btn = st.button("🚀 精准识别并输出", type="primary", use_container_width=True)
 
 # --- 5. 识别主逻辑 ---
 if run_btn:
