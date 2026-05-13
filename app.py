@@ -1,16 +1,22 @@
-import streamlit as st
-import streamlit.components.v1 as components
+
 from aip import AipOcr
 from openpyxl import load_workbook
 from openpyxl.drawing.image import Image as XLImage
 from PIL import Image as PILImage
 import io
 import os
-
+import streamlit as st
+import streamlit.components.v1 as components
 
 # --- 1. 页面配置 ---
 st.set_page_config(page_title="超市价签识别快速识别", layout="wide")
+# 加入 AdSense 验证标记
+components.html("""
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9949147033073504" crossorigin="anonymous"></script>
+<meta name="google-adsense-account" content="ca-pub-9949147033073504">
+""", height=0)
 st.title("多图超市价签识别")
+
 
 # --- 2. 逻辑函数 (保持识别逻辑不变) ---
 def get_all_matched_items_list(ocr_items, excel_names, alias_dict):
@@ -166,19 +172,3 @@ if run_btn:
         wb.save(out_io)
         st.divider()
         st.download_button("📥 下载识别结果 Excel", data=out_io.getvalue(), file_name="识别结果.xlsx", type="primary")
-# --- 广告显示逻辑开始 ---
-
-# 1. 定义广告显示函数
-def show_bottom_ad():
-    # 粘贴你从 Google AdSense 复制的多媒体广告代码
-    ad_code = """
-   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9949147033073504"
-     crossorigin="anonymous"></script>
-    """
-    # 渲染广告，height 可以根据广告实际高度调整，通常 200-300 比较稳妥
-    components.html(ad_code, height=300)
-
-# 2. 确保这个函数调用放在你 app.py 文件的最后一行
-show_bottom_ad()
-
-# --- 广告显示逻辑结束 ---
