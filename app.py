@@ -53,7 +53,8 @@ def calculate_price_for_product(target_name_loc, ocr_items, img_w, img_h):
     res = max(potential_prices, key=lambda x: x['score'])['val']
     try:
         return float(int(res)/100) if ("." not in res and len(res)>=3) else float(res)
-    except: return 0.00
+    except (ValueError, TypeError):
+        return 0.00
 
 # --- 3. 侧边栏配置 ---
 with st.sidebar:
@@ -87,13 +88,14 @@ with col_btn:
     template_path = "template.xlsx"
     if os.path.exists(template_path):
         with open(template_path, "rb") as f:
-            st.download_button(
-                label="📥 下载模板", 
-                data=f,
-                file_name="价签识别规范模板.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                help="点击下载规范 Excel 模板"
-            )
+            template_bytes = f.read()
+        st.download_button(
+            label="📥 下载模板",
+            data=template_bytes,
+            file_name="价签识别规范模板.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            help="点击下载规范 Excel 模板"
+        )
     else:
         st.caption("⚠️ 缺失模板")
 
@@ -120,8 +122,16 @@ if run_btn:
         if len(wb.sheetnames) > 1:
             alias_ws = wb.worksheets[1]
             for r in range(1, alias_ws.max_row + 1):
-                s, a = str(alias_ws.cell(r, 1).value).strip(), str(alias_ws.cell(r, 2).value).strip().split(',')
-                if s and a: alias_dict[s] = a
+                raw_s = alias_ws.cell(row=r, column=1).value
+                raw_a = alias_ws.cell(row=r, column=2).value
+                if raw_s is None or raw_a is None:
+                    continue
+                s = str(raw_s).strip()
+                if not s:
+                    continue
+                aliases = [p.strip() for p in str(raw_a).split(",") if p.strip()]
+                if aliases:
+                    alias_dict[s] = aliases
 
         row_tracker = {}
 
@@ -129,7 +139,12 @@ if run_btn:
             img_bytes = img_file.read()
             img_pil = PILImage.open(io.BytesIO(img_bytes))
             res = client.accurate(img_bytes)
-            ocr_items = res.get('words_result', [])
+            if res.get("error_code"):
+                st.error(
+                    f"OCR 接口错误（{img_file.name}）: [{res.get('error_code')}] {res.get('error_msg', '')}"
+                )
+                continue
+            ocr_items = res.get("words_result") or []
             found_instances = get_all_matched_items_list(ocr_items, excel_names, alias_dict)
             
             for inst in found_instances:
@@ -159,7 +174,7 @@ if run_btn:
                     img_temp = img_temp.resize((bw, hs), PILImage.LANCZOS)
                     img_io = io.BytesIO()
                     img_temp.save(img_io, format="JPEG", quality=80)
-                    
+                    img_io.seek(0)
                     xl_img = XLImage(img_io)
                     xl_img.width, xl_img.height = 90, int(hs * (90/bw))
                     ws.row_dimensions[target_row].height = xl_img.height * 0.8
