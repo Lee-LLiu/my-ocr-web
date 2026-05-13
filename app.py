@@ -1,22 +1,3 @@
-import streamlit as st
-import streamlit.components.v1 as components
-# --- 广告显示逻辑开始 ---
-
-# 1. 定义广告显示函数
-def show_bottom_ad():
-    # 粘贴你从 Google AdSense 复制的多媒体广告代码
-    ad_code = """
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9949147033073504"
-     crossorigin="anonymous"></script>
-    """
-    # 渲染广告，height 可以根据广告实际高度调整，通常 200-300 比较稳妥
-    components.html(ad_code, height=300)
-
-# 2. 确保这个函数调用放在你 app.py 文件的最后一行
-show_bottom_ad()
-
-# --- 广告显示逻辑结束 ---
-
 
 from aip import AipOcr
 from openpyxl import load_workbook
@@ -184,3 +165,22 @@ if run_btn:
         wb.save(out_io)
         st.divider()
         st.download_button("📥 下载识别结果 Excel", data=out_io.getvalue(), file_name="识别结果.xlsx", type="primary")
+import streamlit as st
+import streamlit.components.v1 as components
+# --- 广告显示逻辑开始 ---
+
+# 1. 定义广告显示函数
+def show_bottom_ad():
+    # 粘贴你从 Google AdSense 复制的多媒体广告代码
+    ad_code = """
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9949147033073504"
+     crossorigin="anonymous"></script>
+    """
+    # 渲染广告，height 可以根据广告实际高度调整，通常 200-300 比较稳妥
+    components.html(ad_code, height=300)
+
+# 2. 确保这个函数调用放在你 app.py 文件的最后一行
+show_bottom_ad()
+
+# --- 广告显示逻辑结束 ---
+
