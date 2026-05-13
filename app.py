@@ -1,4 +1,5 @@
-
+import streamlit as st
+import streamlit.components.v1 as components
 from aip import AipOcr
 from openpyxl import load_workbook
 from openpyxl.drawing.image import Image as XLImage
@@ -165,8 +166,6 @@ if run_btn:
         wb.save(out_io)
         st.divider()
         st.download_button("📥 下载识别结果 Excel", data=out_io.getvalue(), file_name="识别结果.xlsx", type="primary")
-import streamlit as st
-import streamlit.components.v1 as components
 # --- 广告显示逻辑开始 ---
 
 # 1. 定义广告显示函数
@@ -183,4 +182,3 @@ def show_bottom_ad():
 show_bottom_ad()
 
 # --- 广告显示逻辑结束 ---
-
