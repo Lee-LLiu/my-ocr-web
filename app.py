@@ -172,7 +172,7 @@ if run_btn:
 def show_bottom_ad():
     # 粘贴你从 Google AdSense 复制的多媒体广告代码
     ad_code = """
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9949147033073504"
+   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9949147033073504"
      crossorigin="anonymous"></script>
     """
     # 渲染广告，height 可以根据广告实际高度调整，通常 200-300 比较稳妥
