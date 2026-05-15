@@ -242,9 +242,9 @@ with col_docs:
         </div>
     """, unsafe_allow_html=True)
 
-with st.expander("ℹ️ 关于我们"):
+with st.markdown("ℹ️ 关于我们"):
         st.write("""
-        **eyeonpricetag.site** 致力于为从业者提供高效的专业工具。
+        **致力于为从业者提供高效的专业工具。
         
         我们深知超市在价格管理与盘点中的痛点，因此开发了这款基于OCR技术的自动识别系统。
         透过技术手段，我们希望帮助小型门店到大型超市实现更精准、更快速的数据对齐，减少人工录入错误。
