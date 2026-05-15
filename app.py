@@ -203,7 +203,7 @@ with col_docs:
     st.markdown(f"""
         <div style="background-color: #f0f2f6; padding: 15px; border-radius: 10px; border-left: 5px solid #ff4b4b;">
             <p style="margin-bottom: 5px; font-size: 0.9em; color: #31333F;">
-                如果您在域名 <strong>eyeonpricetag.site</strong> 的使用过程中遇到识别错误或配置问题，欢迎：
+                如果您在使用过程中遇到识别错误或配置问题，欢迎：
             </p>
             <a href="{mailto_url}" style="color: #ff4b4b; text-decoration: none; font-weight: bold; font-size: 1.1em;">
                 🚀 点击此处，直接发邮件反馈
