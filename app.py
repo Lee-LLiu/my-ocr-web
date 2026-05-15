@@ -8,16 +8,14 @@ import streamlit as st
 import streamlit.components.v1 as components
 import urllib.parse
 
+# --- 核心拦截逻辑：必须放在最上面 ---
+# 获取 URL 参数 (Streamlit 1.29+ 语法)
+if "page" in st.query_params and st.query_params["page"] == "ads.txt":
+    st.text("google.com, pub-9949147033073504, DIRECT, f08c47fec0942fa0")
+    st.stop()  # 强制停止！不让下面的标题和 UI 跑出来
+    
 # --- 1. 页面配置 ---
 st.set_page_config(page_title="超市价签识别快速识别", layout="wide")
-# --- 0. 强制处理 AdSense 验证 ---
-# 获取当前 URL 参数
-query_params = st.query_params
-
-# 检查是否是验证请求（支持多种常见的验证路径标识）
-if "page" in query_params and query_params["page"] == "ads.txt":
-    st.write("google.com, pub-9949147033073504, DIRECT, f08c47fec0942fa0")
-    st.stop()  # 关键：停止执行后续代码，确保页面只输出这行文字
 
 # 加入 AdSense 验证标记 (保持原样)
 components.html("""
