@@ -103,7 +103,7 @@ with col_main:
     # --- 增加文章板块 (绿色框区域) ---
     st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
     st.markdown("---")
-    st.subheader("📰 行业深度见解")
+    st.subheader("📰 实用行业指南")
 
     articles = [
         {
