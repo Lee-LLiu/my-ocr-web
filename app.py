@@ -6,6 +6,7 @@ import io
 import os
 import streamlit as st
 import streamlit.components.v1 as components
+import urllib.parse
 
 # --- 1. 页面配置 ---
 st.set_page_config(page_title="超市价签识别快速识别", layout="wide")
@@ -18,7 +19,7 @@ components.html("""
 
 st.title("多图超市价签识别")
 
-# --- 2. 逻辑函数 (保持识别逻辑完全不变) ---
+# --- 2. 逻辑函数 ---
 def get_all_matched_items_list(ocr_items, excel_names, alias_dict):
     found_list = []
     match_map = {name: name for name in excel_names}
@@ -99,8 +100,8 @@ with col_main:
     with col_act:
         run_btn = st.button("🚀 精准识别并输出", type="primary", use_container_width=True)
 
-# --- 重点：文章板块放置在 run_btn 之外，这样无论点不点识别，文章都会显示 ---
-    st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True) # 留白
+    # --- 增加文章板块 (绿色框区域) ---
+    st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
     st.markdown("---")
     st.subheader("📰 行业深度见解")
 
@@ -109,30 +110,22 @@ with col_main:
             "title": "《2026 超市价签管理指南》",
             "tag": "行业标准",
             "date": "2026-05-14",
-            "content": "随着数字化零售的发展，价签不仅是价格的载体，更是库存管理的核心。本文深度解析如何优化价签布局以提升 OCR 识别率...",
-            "link": "#" # 这里可以放你的文章详情页链接
+            "content": "随着数字化零售的发展，价签不仅是价格的载体，更是库存管理的核心。本文深度解析如何优化价签布局以提升识别效率...",
+            "link": "#"
         },
         {
             "title": "《如何利用 OCR 技术提高盘点效率》",
             "tag": "技术应用",
             "date": "2026-05-10",
-            "content": "传统人工盘点耗时耗力，通过自研的坐标拟合算法，识别准确率可提升至 99% 以上。本文分享技术实现的三个关键点...",
+            "content": "传统人工盘点耗时耗力，通过自研的坐标拟合算法，识别准确率可提升至 99% 以上。本文分享三个关键实操点...",
             "link": "#"
         }
     ]
+
     for article in articles:
-        # 这里放上面的 st.markdown(f"""卡片代码""")
-        for article in articles:
         with st.container():
-            # 使用 HTML 营造卡片感
             st.markdown(f"""
-                <div style="
-                    border: 1px solid #e6e9ef; 
-                    padding: 20px; 
-                    border-radius: 10px; 
-                    margin-bottom: 15px;
-                    background-color: white;
-                ">
+                <div style="border: 1px solid #e6e9ef; padding: 20px; border-radius: 10px; margin-bottom: 15px; background-color: white;">
                     <span style="background-color: #ffe8e8; color: #ff4b4b; padding: 2px 8px; border-radius: 5px; font-size: 0.8em; font-weight: bold;">
                         {article['tag']}
                     </span>
@@ -142,7 +135,7 @@ with col_main:
                     <a href="{article['link']}" style="text-decoration: none; color: #ff4b4b; font-size: 0.9em; font-weight: bold;">阅读全文 →</a>
                 </div>
             """, unsafe_allow_html=True)
-        pass
+
     # --- 5. 识别主逻辑 ---
     if run_btn:
         if not (up_template and up_imgs and user_app_id and user_api_key and user_secret_key):
@@ -151,7 +144,6 @@ with col_main:
             client = AipOcr(user_app_id, user_api_key, user_secret_key)
             wb = load_workbook(io.BytesIO(up_template.read()))
             ws = wb.worksheets[0]
-            
             excel_names = [str(ws.cell(row=i, column=1).value).strip() for i in range(2, ws.max_row + 1) if ws.cell(row=i, column=1).value]
             
             alias_dict = {}
@@ -163,7 +155,6 @@ with col_main:
                     if s and a: alias_dict[s] = a
 
             row_tracker = {}
-
             for img_file in up_imgs:
                 img_bytes = img_file.read()
                 img_pil = PILImage.open(io.BytesIO(img_bytes))
@@ -180,14 +171,12 @@ with col_main:
                         if val == p_name or p_name in val or val in p_name:
                             target_row = r
                             break
-                    
                     if target_row:
                         if target_row not in row_tracker:
                             curr = 3
                             while ws.cell(row=target_row, column=curr).value is not None:
                                 curr += 2
                             row_tracker[target_row] = curr
-                        
                         c_col = row_tracker[target_row]
                         ws.cell(row=target_row, column=c_col + 1).value = price
                         
@@ -198,12 +187,10 @@ with col_main:
                         img_temp = img_temp.resize((bw, hs), PILImage.LANCZOS)
                         img_io = io.BytesIO()
                         img_temp.save(img_io, format="JPEG", quality=80)
-                        
                         xl_img = XLImage(img_io)
                         xl_img.width, xl_img.height = 90, int(hs * (90/bw))
                         ws.row_dimensions[target_row].height = xl_img.height * 0.8
                         ws.add_image(xl_img, ws.cell(row=target_row, column=c_col).coordinate)
-                        
                         st.success(f"✅ 识别到 【{p_name}】 来自 {img_file.name}")
                         row_tracker[target_row] += 2
 
@@ -220,30 +207,23 @@ with col_docs:
     with st.expander("📝 模板填写规范", expanded=True):
         st.write("""
         1. **第一列**：填写超市系统中标准的商品名称。
-        2. **别名设置**：如果价签上的名字缩写了或有其他别称，请在第二张工作表设置别名。
+        2. **别名设置**：如果在第二张工作表设置别名。
         3. **格式提示**：请勿修改模板的表头结构。
         """)
 
     with st.expander("🛠️ 技术架构说明"):
-        st.write("""
-        
-        """)
+        st.write("本系统结合 Baidu OCR 与自研空间算法，实现高精度匹配。")
     
     st.markdown("---")
     st.markdown("### 📧 反馈与支持")
     
-    # --- 预设邮件内容配置 ---
-    developer_email = "leeliupurpledon@gmail.com"  # 填入你的真实邮箱
+    developer_email = "leeliupurpledon@gmail.com"
     email_subject = "【价签识别工具】用户反馈"
     email_body = "开发者您好，在使用 eyeonpricetag.site 过程中，我遇到了以下问题：\n\n1. "
-    
-    # 构建 mailto 链接（对中文进行必要的编码处理）
-    import urllib.parse
     encoded_subject = urllib.parse.quote(email_subject)
     encoded_body = urllib.parse.quote(email_body)
     mailto_url = f"mailto:{developer_email}?subject={encoded_subject}&body={encoded_body}"
 
-    # 使用 HTML 渲染一个更醒目的按钮或链接
     st.markdown(f"""
         <div style="background-color: #f0f2f6; padding: 15px; border-radius: 10px; border-left: 5px solid #ff4b4b;">
             <p style="margin-bottom: 5px; font-size: 0.9em; color: #31333F;">
