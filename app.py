@@ -99,6 +99,50 @@ with col_main:
     with col_act:
         run_btn = st.button("🚀 精准识别并输出", type="primary", use_container_width=True)
 
+# --- 重点：文章板块放置在 run_btn 之外，这样无论点不点识别，文章都会显示 ---
+    st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True) # 留白
+    st.markdown("---")
+    st.subheader("📰 行业深度见解")
+
+    articles = [
+        {
+            "title": "《2026 超市价签管理指南》",
+            "tag": "行业标准",
+            "date": "2026-05-14",
+            "content": "随着数字化零售的发展，价签不仅是价格的载体，更是库存管理的核心。本文深度解析如何优化价签布局以提升 OCR 识别率...",
+            "link": "#" # 这里可以放你的文章详情页链接
+        },
+        {
+            "title": "《如何利用 OCR 技术提高盘点效率》",
+            "tag": "技术应用",
+            "date": "2026-05-10",
+            "content": "传统人工盘点耗时耗力，通过自研的坐标拟合算法，识别准确率可提升至 99% 以上。本文分享技术实现的三个关键点...",
+            "link": "#"
+        }
+    ]
+    for article in articles:
+        # 这里放上面的 st.markdown(f"""卡片代码""")
+        for article in articles:
+        with st.container():
+            # 使用 HTML 营造卡片感
+            st.markdown(f"""
+                <div style="
+                    border: 1px solid #e6e9ef; 
+                    padding: 20px; 
+                    border-radius: 10px; 
+                    margin-bottom: 15px;
+                    background-color: white;
+                ">
+                    <span style="background-color: #ffe8e8; color: #ff4b4b; padding: 2px 8px; border-radius: 5px; font-size: 0.8em; font-weight: bold;">
+                        {article['tag']}
+                    </span>
+                    <span style="float: right; color: #999; font-size: 0.8em;">{article['date']}</span>
+                    <h4 style="margin-top: 10px; color: #31333F;">{article['title']}</h4>
+                    <p style="color: #555; font-size: 0.9em; line-height: 1.6;">{article['content']}</p>
+                    <a href="{article['link']}" style="text-decoration: none; color: #ff4b4b; font-size: 0.9em; font-weight: bold;">阅读全文 →</a>
+                </div>
+            """, unsafe_allow_html=True)
+        pass
     # --- 5. 识别主逻辑 ---
     if run_btn:
         if not (up_template and up_imgs and user_app_id and user_api_key and user_secret_key):
