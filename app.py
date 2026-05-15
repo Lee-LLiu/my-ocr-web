@@ -1,4 +1,3 @@
-
 from aip import AipOcr
 from openpyxl import load_workbook
 from openpyxl.drawing.image import Image as XLImage
@@ -10,15 +9,16 @@ import streamlit.components.v1 as components
 
 # --- 1. 页面配置 ---
 st.set_page_config(page_title="超市价签识别快速识别", layout="wide")
+
 # 加入 AdSense 验证标记
 components.html("""
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9949147033073504" crossorigin="anonymous"></script>
 <meta name="google-adsense-account" content="ca-pub-9949147033073504">
 """, height=0)
+
 st.title("多图超市价签识别")
 
-
-# --- 2. 逻辑函数 (保持识别逻辑不变) ---
+# --- 2. 逻辑函数 (保持识别逻辑完全不变) ---
 def get_all_matched_items_list(ocr_items, excel_names, alias_dict):
     found_list = []
     match_map = {name: name for name in excel_names}
@@ -73,13 +73,11 @@ with st.sidebar:
     st.subheader("💰 额度管理")
     st.markdown("[🚀 快速充值点这里](https://console.bce.baidu.com/ai/#/ai/ocr/overview/resource/buy)")
 
-# --- 4. 主界面布局 (改为两栏布局) ---
-
-# 创建主栏和侧栏（这里的 col_main 是左侧功能区，col_docs 是右侧文章区）
+# --- 4. 主界面布局 (分左右两栏) ---
 col_main, col_docs = st.columns([2, 1], gap="large")
 
 with col_main:
-    # --- 原有的上传与识别功能放入左侧 ---
+    # 顶部下载/上传区域
     col_up, col_btn = st.columns([10, 3]) 
     with col_up:
         up_template = st.file_uploader("1. 上传 Excel 模板", type=['xlsx'])
@@ -101,79 +99,77 @@ with col_main:
     with col_act:
         run_btn = st.button("🚀 精准识别并输出", type="primary", use_container_width=True)
 
-    # --- 5. 识别主逻辑 (保持不变，但逻辑输出也放在 col_main 中) ---
+    # --- 5. 识别主逻辑 ---
     if run_btn:
-        # 这里粘贴你原有的 if run_btn 内部的所有逻辑代码...
-        # 确保里面的 st.success, st.download_button 等都在 col_main 的作用域下
-        if run_btn:
-    if not (up_template and up_imgs and user_app_id and user_api_key and user_secret_key):
-        st.error("请完整填写 API 配置并上传模板/照片")
-    else:
-        client = AipOcr(user_app_id, user_api_key, user_secret_key)
-        wb = load_workbook(io.BytesIO(up_template.read()))
-        ws = wb.worksheets[0]
-        
-        excel_names = [str(ws.cell(row=i, column=1).value).strip() for i in range(2, ws.max_row + 1) if ws.cell(row=i, column=1).value]
-        
-        alias_dict = {}
-        if len(wb.sheetnames) > 1:
-            alias_ws = wb.worksheets[1]
-            for r in range(1, alias_ws.max_row + 1):
-                s, a = str(alias_ws.cell(r, 1).value).strip(), str(alias_ws.cell(r, 2).value).strip().split(',')
-                if s and a: alias_dict[s] = a
-
-        row_tracker = {}
-
-        for img_file in up_imgs:
-            img_bytes = img_file.read()
-            img_pil = PILImage.open(io.BytesIO(img_bytes))
-            res = client.accurate(img_bytes)
-            ocr_items = res.get('words_result', [])
-            found_instances = get_all_matched_items_list(ocr_items, excel_names, alias_dict)
+        if not (up_template and up_imgs and user_app_id and user_api_key and user_secret_key):
+            st.error("请完整填写 API 配置并上传模板/照片")
+        else:
+            client = AipOcr(user_app_id, user_api_key, user_secret_key)
+            wb = load_workbook(io.BytesIO(up_template.read()))
+            ws = wb.worksheets[0]
             
-            for inst in found_instances:
-                p_name, p_loc = inst['name'], inst['loc']
-                price = calculate_price_for_product(p_loc, ocr_items, img_pil.size[0], img_pil.size[1])
-                target_row = None
-                for r in range(2, ws.max_row + 1):
-                    val = str(ws.cell(r, 1).value).strip()
-                    if val == p_name or p_name in val or val in p_name:
-                        target_row = r
-                        break
+            excel_names = [str(ws.cell(row=i, column=1).value).strip() for i in range(2, ws.max_row + 1) if ws.cell(row=i, column=1).value]
+            
+            alias_dict = {}
+            if len(wb.sheetnames) > 1:
+                alias_ws = wb.worksheets[1]
+                for r in range(1, alias_ws.max_row + 1):
+                    s = str(alias_ws.cell(r, 1).value).strip()
+                    a = str(alias_ws.cell(r, 2).value).strip().split(',')
+                    if s and a: alias_dict[s] = a
+
+            row_tracker = {}
+
+            for img_file in up_imgs:
+                img_bytes = img_file.read()
+                img_pil = PILImage.open(io.BytesIO(img_bytes))
+                res = client.accurate(img_bytes)
+                ocr_items = res.get('words_result', [])
+                found_instances = get_all_matched_items_list(ocr_items, excel_names, alias_dict)
                 
-                if target_row:
-                    if target_row not in row_tracker:
-                        curr = 3
-                        while ws.cell(row=target_row, column=curr).value is not None:
-                            curr += 2
-                        row_tracker[target_row] = curr
+                for inst in found_instances:
+                    p_name, p_loc = inst['name'], inst['loc']
+                    price = calculate_price_for_product(p_loc, ocr_items, img_pil.size[0], img_pil.size[1])
+                    target_row = None
+                    for r in range(2, ws.max_row + 1):
+                        val = str(ws.cell(r, 1).value).strip()
+                        if val == p_name or p_name in val or val in p_name:
+                            target_row = r
+                            break
                     
-                    c_col = row_tracker[target_row]
-                    ws.cell(row=target_row, column=c_col + 1).value = price
-                    
-                    img_temp = img_pil.copy()
-                    if img_temp.mode in ("RGBA", "P"): img_temp = img_temp.convert("RGB")
-                    bw = 800
-                    hs = int(img_temp.size[1] * (bw / img_temp.size[0]))
-                    img_temp = img_temp.resize((bw, hs), PILImage.LANCZOS)
-                    img_io = io.BytesIO()
-                    img_temp.save(img_io, format="JPEG", quality=80)
-                    
-                    xl_img = XLImage(img_io)
-                    xl_img.width, xl_img.height = 90, int(hs * (90/bw))
-                    ws.row_dimensions[target_row].height = xl_img.height * 0.8
-                    ws.add_image(xl_img, ws.cell(row=target_row, column=c_col).coordinate)
-                    
-                    st.success(f"✅ 识别到 【{p_name}】 来自 {img_file.name}")
-                    row_tracker[target_row] += 2
+                    if target_row:
+                        if target_row not in row_tracker:
+                            curr = 3
+                            while ws.cell(row=target_row, column=curr).value is not None:
+                                curr += 2
+                            row_tracker[target_row] = curr
+                        
+                        c_col = row_tracker[target_row]
+                        ws.cell(row=target_row, column=c_col + 1).value = price
+                        
+                        img_temp = img_pil.copy()
+                        if img_temp.mode in ("RGBA", "P"): img_temp = img_temp.convert("RGB")
+                        bw = 800
+                        hs = int(img_temp.size[1] * (bw / img_temp.size[0]))
+                        img_temp = img_temp.resize((bw, hs), PILImage.LANCZOS)
+                        img_io = io.BytesIO()
+                        img_temp.save(img_io, format="JPEG", quality=80)
+                        
+                        xl_img = XLImage(img_io)
+                        xl_img.width, xl_img.height = 90, int(hs * (90/bw))
+                        ws.row_dimensions[target_row].height = xl_img.height * 0.8
+                        ws.add_image(xl_img, ws.cell(row=target_row, column=c_col).coordinate)
+                        
+                        st.success(f"✅ 识别到 【{p_name}】 来自 {img_file.name}")
+                        row_tracker[target_row] += 2
 
-        out_io = io.BytesIO()
-        wb.save(out_io)
-        st.divider()
-        st.download_button("📥 下载识别结果 Excel", data=out_io.getvalue(), file_name="识别结果.xlsx", type="primary")
+            out_io = io.BytesIO()
+            wb.save(out_io)
+            st.divider()
+            st.download_button("📥 下载识别结果 Excel", data=out_io.getvalue(), file_name="识别结果.xlsx", type="primary")
 
+# --- 6. 右侧文章区域 (col_docs) ---
 with col_docs:
-    # --- 右侧文章区域：增加文字内容利于 AdSense 审核 ---
     st.markdown("### 📘 使用指南")
     st.info("为了获得最佳识别效果，请确保价签照片清晰、无反光。")
     
@@ -186,8 +182,8 @@ with col_docs:
 
     with st.expander("🛠️ 技术架构说明"):
         st.write("""
-        本工具基于 **Baidu OCR 高精度识别引擎** 构建，结合自研的 **空間坐標擬合算法**，
-        能自動匹配商品名稱與其最近距離的價格文字，實現自動化錄入。
+        本工具基于 **Baidu OCR 高精度识别引擎** 构建，结合自研的 **空间坐标拟合算法**，
+        能自动匹配商品名称与其最近距离的价格文字，实现自动化录入。
         """)
     
     st.markdown("---")
