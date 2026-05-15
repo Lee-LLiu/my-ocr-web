@@ -11,10 +11,14 @@ import urllib.parse
 # --- 1. 页面配置 ---
 st.set_page_config(page_title="超市价签识别快速识别", layout="wide")
 
-# 检查网址参数，如果用户访问的是 eyeonpricetag.site/?page=ads.txt
-if st.query_params.get("page") == "ads.txt":
-    st.write("google.com, pub-9949147033073504, DIRECT, f08c47fec0942fa0")
-    st.stop() # 停止运行剩下的 UI 代码
+# 加入 AdSense 验证标记 (保持原样)
+components.html("""
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9949147033073504" crossorigin="anonymous"></script>
+<meta name="google-adsense-account" content="ca-pub-9949147033073504">
+""", height=0)
+
+# 这里建议在 Streamlit 原生组件中也放一个 meta 标签，确保爬虫 100% 能抓取到
+st.markdown('<meta name="google-adsense-account" content="ca-pub-9949147033073504">', unsafe_allow_html=True)
 
 st.title("多图超市价签识别")
 
@@ -24,7 +28,8 @@ def get_all_matched_items_list(ocr_items, excel_names, alias_dict):
     match_map = {name: name for name in excel_names}
     for std_name, aliases in alias_dict.items():
         for a in aliases: 
-            match_map[a] = std_name
+            match_map[a.strip()] = std_name
+            
     sorted_keys = sorted(match_map.keys(), key=len, reverse=True)
     for item in ocr_items:
         text = item['words']
@@ -39,27 +44,22 @@ def calculate_price_for_product(target_name_loc, ocr_items, img_w, img_h):
     nx, ny = target_name_loc['left'] + target_name_loc['width']/2, target_name_loc['top'] + target_name_loc['height']/2
     for item in ocr_items:
         text, loc = item['words'], item['location']
-        if ":" in text or len(text) > 8 or any(x in text for x in ["根", "个", "元/", "买一"]): 
-            continue
+        if ":" in text or len(text) > 8 or any(x in text for x in ["根", "个", "元/", "买一"]): continue
         nums = "".join(filter(lambda x: x.isdigit() or x == '.', text))
-        if len(nums) < 2: 
-            continue
+        if len(nums) < 2: continue
         px, py = loc['left'] + loc['width']/2, loc['top'] + loc['height']/2
         x_ratio = abs(nx - px) / img_w
         y_ratio = abs(ny - py) / img_h
         dist_w = 2.0 if x_ratio < 0.1 else (0.1 if x_ratio > 0.2 else 1.0)
         v_w = 1.0 if y_ratio < 0.3 else 0.2
         score = (loc['width'] * loc['height']) * dist_w * v_w
-        if "." in text: 
-            score *= 1.5
+        if "." in text: score *= 1.5
         potential_prices.append({"val": nums, "score": score})
-    if not potential_prices: 
-        return 0.00
+    if not potential_prices: return 0.00
     res = max(potential_prices, key=lambda x: x['score'])['val']
     try:
         return float(int(res)/100) if ("." not in res and len(res)>=3) else float(res)
-    except: 
-        return 0.00
+    except: return 0.00
 
 # --- 3. 侧边栏配置 ---
 with st.sidebar:
@@ -79,7 +79,7 @@ with st.sidebar:
     st.subheader("💰 额度管理")
     st.markdown("[🚀 快速充值点这里](https://console.bce.baidu.com/ai/#/ai/ocr/overview/resource/buy)")
 
-# --- 4. 主界面布局 ---
+# --- 4. 主界面布局 (分左右两栏) ---
 col_main, col_docs = st.columns([2, 1], gap="large")
 
 with col_main:
@@ -109,8 +109,8 @@ with col_main:
     st.subheader("📰 实用行业指南")
 
     articles = [
-        {"title": "《2026 超市价签管理指南》", "tag": "行业标准", "date": "2026-05-14", "content": "随着数字化零售的发展...", "link": "#"},
-        {"title": "《如何利用 OCR 技术提高盘点效率》", "tag": "技术应用", "date": "2026-05-10", "content": "传统人工盘点耗时耗力...", "link": "#"},
+        {"title": "《2026 超市价签管理指南》", "tag": "行业标准", "date": "2026-05-14", "content": "随着数字化零售的发展，价签不仅是价格的载体，更是库存管理的核心...", "link": "#"},
+        {"title": "《如何利用 OCR 技术提高盘点效率》", "tag": "技术应用", "date": "2026-05-10", "content": "传统人工盘点耗时耗力，通过自研的坐标拟合算法...", "link": "#"},
         {"title": "《价签有哪些形式》", "tag": "行业", "date": "2026-05-02", "content": "价签的形式多种多样...", "link": "#"}
     ]
 
@@ -128,7 +128,6 @@ with col_main:
 
     # --- 5. 识别主逻辑 ---
     if run_btn:
-        # 下面所有的代码都相对于 'if run_btn:' 缩进了 4 个空格
         if not (up_template and up_imgs and user_app_id and user_api_key and user_secret_key):
             st.error("请完整填写 API 配置并上传模板/照片")
         else:
@@ -142,9 +141,9 @@ with col_main:
                 alias_ws = wb.worksheets[1]
                 for r in range(1, alias_ws.max_row + 1):
                     s = str(alias_ws.cell(r, 1).value).strip()
-                    a = str(alias_ws.cell(r, 2).value).strip().split(',')
-                    if s and a: 
-                        alias_dict[s] = a
+                    a_val = alias_ws.cell(r, 2).value
+                    if s and a_val:
+                        alias_dict[s] = str(a_val).strip().split(',')
 
             row_tracker = {}
             for img_file in up_imgs:
@@ -157,24 +156,78 @@ with col_main:
                 for inst in found_instances:
                     p_name, p_loc = inst['name'], inst['loc']
                     price = calculate_price_for_product(p_loc, ocr_items, img_pil.size[0], img_pil.size[1])
+                    
                     target_row = None
                     for r in range(2, ws.max_row + 1):
                         val = str(ws.cell(r, 1).value).strip()
-                        if val == p_name or p_name in val or val in p_name:
+                        if val == p_name: # 精确匹配
                             target_row = r
                             break
+                    
                     if target_row:
                         if target_row not in row_tracker:
                             curr = 3
                             while ws.cell(row=target_row, column=curr).value is not None:
                                 curr += 2
                             row_tracker[target_row] = curr
+                        
                         c_col = row_tracker[target_row]
                         ws.cell(row=target_row, column=c_col + 1).value = price
                         
+                        # 图片处理与插入
                         img_temp = img_pil.copy()
-                        if img_temp.mode in ("RGBA", "P"): 
-                            img_temp = img_temp.convert("RGB")
-                        bw = 800
+                        if img_temp.mode in ("RGBA", "P"): img_temp = img_temp.convert("RGB")
+                        
+                        # 固定宽度缩放，保持比例
+                        bw = 400 
                         hs = int(img_temp.size[1] * (bw / img_temp.size[0]))
-                        img_temp = img_temp.resize((
+                        img_temp = img_temp.resize((bw, hs), PILImage.LANCZOS)
+                        
+                        img_io = io.BytesIO()
+                        img_temp.save(img_io, format="JPEG", quality=75)
+                        xl_img = XLImage(img_io)
+                        
+                        # 调整在 Excel 里的显示大小（防止单元格过载）
+                        xl_img.width, xl_img.height = 120, int(hs * (120/bw))
+                        ws.row_dimensions[target_row].height = xl_img.height * 0.85
+                        
+                        ws.add_image(xl_img, ws.cell(row=target_row, column=c_col).coordinate)
+                        st.success(f"✅ 识别到 【{p_name}】")
+                        row_tracker[target_row] += 2
+
+            out_io = io.BytesIO()
+            wb.save(out_io)
+            st.divider()
+            st.download_button("📥 下载识别结果 Excel", data=out_io.getvalue(), file_name="识别结果汇总.xlsx", type="primary", use_container_width=True)
+
+# --- 6. 右侧文章区域 ---
+with col_docs:
+    st.markdown("### 📘 使用指南")
+    st.info("为了获得最佳识别效果，请确保价签照片清晰、无反光。")
+    
+    with st.expander("📝 模板填写规范", expanded=True):
+        st.write("""
+        1. **第一列**：填写超市系统中标准的商品名称。
+        2. **别名设置**：如果在第二张工作表设置别名，请用英文逗号隔开。
+        3. **格式提示**：请勿修改模板的原始列顺序。
+        """)
+
+    with st.expander("🛠️ 技术架构说明"):
+        st.write("本系统结合 Baidu OCR 与自研空间坐标拟合算法。")
+    
+    st.markdown("---")
+    st.markdown("### 📧 反馈与支持")
+    
+    developer_email = "leeliupurpledon@gmail.com"
+    mailto_url = f"mailto:{developer_email}?subject=Feedback&body=Hello..."
+    st.markdown(f"""
+        <div style="background-color: #f0f2f6; padding: 15px; border-radius: 10px; border-left: 5px solid #ff4b4b;">
+            <a href="{mailto_url}" style="color: #ff4b4b; text-decoration: none; font-weight: bold;">🚀 点击此处发邮件反馈</a>
+        </div>
+    """, unsafe_allow_html=True)
+    
+with st.expander("ℹ️ 关于我们"):
+    st.write("我们致力于为零售从业者提供高效的数字化工具。")
+
+with st.expander("🔒 隐私政策"):
+    st.write("1. 数据搜集：我们不会持久化存储您的照片。2. 第三方服务：使用百度 AI OCR。3. Google 广告：使用 Cookie 投放广告。")
