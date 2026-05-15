@@ -242,7 +242,7 @@ with col_docs:
         </div>
     """, unsafe_allow_html=True)
 
-with st.markdown("ℹ️ 关于我们"):
+with st.markdown("### ℹ️ 关于我们"):
         st.write("""
         **致力于为从业者提供高效的专业工具。
         
