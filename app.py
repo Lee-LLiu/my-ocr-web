@@ -187,4 +187,26 @@ with col_docs:
     
     st.markdown("---")
     st.markdown("### 📧 反馈与支持")
-    st.caption("如果您在使用过程中遇到任何问题，欢迎联系开发者。")
+    
+    # --- 预设邮件内容配置 ---
+    developer_email = "leeliupurpledon@gmail.com"  # 填入你的真实邮箱
+    email_subject = "【价签识别工具】用户反馈"
+    email_body = "开发者您好，在使用 eyeonpricetag.site 过程中，我遇到了以下问题：\n\n1. "
+    
+    # 构建 mailto 链接（对中文进行必要的编码处理）
+    import urllib.parse
+    encoded_subject = urllib.parse.quote(email_subject)
+    encoded_body = urllib.parse.quote(email_body)
+    mailto_url = f"mailto:{developer_email}?subject={encoded_subject}&body={encoded_body}"
+
+    # 使用 HTML 渲染一个更醒目的按钮或链接
+    st.markdown(f"""
+        <div style="background-color: #f0f2f6; padding: 15px; border-radius: 10px; border-left: 5px solid #ff4b4b;">
+            <p style="margin-bottom: 5px; font-size: 0.9em; color: #31333F;">
+                如果您在域名 <strong>eyeonpricetag.site</strong> 的使用过程中遇到识别错误或配置问题，欢迎：
+            </p>
+            <a href="{mailto_url}" style="color: #ff4b4b; text-decoration: none; font-weight: bold; font-size: 1.1em;">
+                🚀 点击此处，直接发邮件反馈
+            </a>
+        </div>
+    """, unsafe_allow_html=True)
