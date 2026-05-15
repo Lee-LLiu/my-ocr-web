@@ -11,11 +11,10 @@ import urllib.parse
 # --- 1. 页面配置 ---
 st.set_page_config(page_title="超市价签识别快速识别", layout="wide")
 
-# 加入 AdSense 验证标记
-components.html("""
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9949147033073504" crossorigin="anonymous"></script>
-<meta name="google-adsense-account" content="ca-pub-9949147033073504">
-""", height=0)
+# 检查网址参数，如果用户访问的是 eyeonpricetag.site/?page=ads.txt
+if st.query_params.get("page") == "ads.txt":
+    st.write("google.com, pub-9949147033073504, DIRECT, f08c47fec0942fa0")
+    st.stop() # 停止运行剩下的 UI 代码
 
 st.title("多图超市价签识别")
 
