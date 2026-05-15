@@ -1,3 +1,78 @@
+
+from aip import AipOcr
+from openpyxl import load_workbook
+from openpyxl.drawing.image import Image as XLImage
+from PIL import Image as PILImage
+import io
+import os
+import streamlit as st
+import streamlit.components.v1 as components
+
+# --- 1. 页面配置 ---
+st.set_page_config(page_title="超市价签识别快速识别", layout="wide")
+# 加入 AdSense 验证标记
+components.html("""
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9949147033073504" crossorigin="anonymous"></script>
+<meta name="google-adsense-account" content="ca-pub-9949147033073504">
+""", height=0)
+st.title("多图超市价签识别")
+
+
+# --- 2. 逻辑函数 (保持识别逻辑不变) ---
+def get_all_matched_items_list(ocr_items, excel_names, alias_dict):
+    found_list = []
+    match_map = {name: name for name in excel_names}
+    for std_name, aliases in alias_dict.items():
+        for a in aliases: match_map[a] = std_name
+    sorted_keys = sorted(match_map.keys(), key=len, reverse=True)
+    for item in ocr_items:
+        text = item['words']
+        for key in sorted_keys:
+            if key in text:
+                found_list.append({"name": match_map[key], "loc": item['location']})
+                break 
+    return found_list
+
+def calculate_price_for_product(target_name_loc, ocr_items, img_w, img_h):
+    potential_prices = []
+    nx, ny = target_name_loc['left'] + target_name_loc['width']/2, target_name_loc['top'] + target_name_loc['height']/2
+    for item in ocr_items:
+        text, loc = item['words'], item['location']
+        if ":" in text or len(text) > 8 or any(x in text for x in ["根", "个", "元/", "买一"]): continue
+        nums = "".join(filter(lambda x: x.isdigit() or x == '.', text))
+        if len(nums) < 2: continue
+        px, py = loc['left'] + loc['width']/2, loc['top'] + loc['height']/2
+        x_ratio = abs(nx - px) / img_w
+        y_ratio = abs(ny - py) / img_h
+        dist_w = 2.0 if x_ratio < 0.1 else (0.1 if x_ratio > 0.2 else 1.0)
+        v_w = 1.0 if y_ratio < 0.3 else 0.2
+        score = (loc['width'] * loc['height']) * dist_w * v_w
+        if "." in text: score *= 1.5
+        potential_prices.append({"val": nums, "score": score})
+    if not potential_prices: return 0.00
+    res = max(potential_prices, key=lambda x: x['score'])['val']
+    try:
+        return float(int(res)/100) if ("." not in res and len(res)>=3) else float(res)
+    except: return 0.00
+
+# --- 3. 侧边栏配置 ---
+with st.sidebar:
+    st.header("👤 个人账号配置")
+    with st.expander("👉 还没有 API Key？点我 1 分钟获取"):
+        st.markdown("""
+        1. [点此免费注册登录](https://console.bce.baidu.com/)
+        2. [点此领取免费额度](https://console.bce.baidu.com/ai/#/ai/ocr/overview/resource/getFree) 
+           <br><span style='color:red;'>*(选：通用场景OCR-高精度版)*</span>
+        3. [点此免费获取专属Key](https://console.bce.baidu.com/ai/#/ai/ocr/app/create)
+           <br><span style='color:red;'>*(教程：创建应用-命名-全选文字识别接口-简单描述-提交)*</span>
+        """, unsafe_allow_html=True)
+    user_app_id = st.text_input("第一步：输入 APP_ID", type="password")
+    user_api_key = st.text_input("第二步：输入 API_KEY", type="password")
+    user_secret_key = st.text_input("第三步：输入 SECRET_KEY", type="password")
+    st.divider()
+    st.subheader("💰 额度管理")
+    st.markdown("[🚀 快速充值点这里](https://console.bce.baidu.com/ai/#/ai/ocr/overview/resource/buy)")
+
 # --- 4. 主界面布局 (改为两栏布局) ---
 
 # 创建主栏和侧栏（这里的 col_main 是左侧功能区，col_docs 是右侧文章区）
